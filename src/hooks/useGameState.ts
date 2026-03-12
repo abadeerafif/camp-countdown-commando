@@ -8,6 +8,7 @@ interface GameState {
   isRunning: boolean;
   isDefused: boolean;
   isExploded: boolean;
+  endTimestamp: number | null; // absolute epoch ms when timer hits zero
 }
 
 const DEFAULT_STATE: GameState = {
