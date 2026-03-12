@@ -12,11 +12,12 @@ interface GameState {
 }
 
 const DEFAULT_STATE: GameState = {
-  timeLeftSeconds: 600, // 10 minutes default
+  timeLeftSeconds: 600,
   defusePin: "1234567890",
   isRunning: false,
   isDefused: false,
   isExploded: false,
+  endTimestamp: null,
 };
 
 export function useGameState() {
