@@ -132,6 +132,7 @@ export function useGameState() {
       isRunning: false,
       isDefused: false,
       isExploded: false,
+      endTimestamp: null,
     }));
   }, []);
 
