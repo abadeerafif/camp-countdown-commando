@@ -107,6 +107,16 @@ export function useGameState() {
     }));
   }, []);
 
+  const getShareUrl = useCallback((autoStart: boolean = false) => {
+    const base = window.location.origin + window.location.pathname;
+    const params = new URLSearchParams({
+      t: state.timeLeftSeconds.toString(),
+      p: state.defusePin,
+    });
+    if (autoStart) params.set("s", "1");
+    return `${base}?${params.toString()}`;
+  }, [state.timeLeftSeconds, state.defusePin]);
+
   return {
     ...state,
     checkAdminPin,
@@ -114,5 +124,6 @@ export function useGameState() {
     setAdminSettings,
     startTimer,
     resetGame,
+    getShareUrl,
   };
 }
