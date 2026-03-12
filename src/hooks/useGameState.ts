@@ -67,7 +67,7 @@ export function useGameState() {
     );
   }, [state.timeLeftSeconds, state.defusePin, state.isRunning]);
 
-  // Countdown timer
+  // Countdown timer — uses endTimestamp for drift-proof sync
   useEffect(() => {
     if (!state.isRunning || state.isDefused || state.isExploded) return;
     if (state.timeLeftSeconds <= 0) {
@@ -76,6 +76,14 @@ export function useGameState() {
     }
     const interval = setInterval(() => {
       setState((s) => {
+        if (s.endTimestamp) {
+          const remaining = Math.max(0, Math.round((s.endTimestamp - Date.now()) / 1000));
+          if (remaining <= 0) {
+            return { ...s, timeLeftSeconds: 0, isExploded: true, isRunning: false };
+          }
+          return { ...s, timeLeftSeconds: remaining };
+        }
+        // Fallback for locally-started timers
         if (s.timeLeftSeconds <= 1) {
           return { ...s, timeLeftSeconds: 0, isExploded: true, isRunning: false };
         }
