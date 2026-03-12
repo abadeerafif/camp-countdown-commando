@@ -8,6 +8,7 @@ import { DefusedScreen } from "@/components/DefusedScreen";
 import { ExplodedScreen } from "@/components/ExplodedScreen";
 import scoutLogo from "@/assets/scout_logo.jpg";
 
+// Main page component
 const Index = () => {
   const game = useGameState();
   const [view, setView] = useState<"main" | "admin">("main");
