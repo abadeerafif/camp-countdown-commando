@@ -117,7 +117,13 @@ export function useGameState() {
   }, []);
 
   const startTimer = useCallback(() => {
-    setState((s) => ({ ...s, isRunning: true, isDefused: false, isExploded: false }));
+    setState((s) => ({
+      ...s,
+      isRunning: true,
+      isDefused: false,
+      isExploded: false,
+      endTimestamp: Date.now() + s.timeLeftSeconds * 1000,
+    }));
   }, []);
 
   const resetGame = useCallback(() => {
