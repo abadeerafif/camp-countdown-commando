@@ -12,11 +12,19 @@ interface AdminPanelProps {
   getShareUrl: (autoStart: boolean) => string;
 }
 
-export function AdminPanel({ currentTime, currentPin, onSave, onStart, onReset, onBack, isRunning }: AdminPanelProps) {
+export function AdminPanel({ currentTime, currentPin, onSave, onStart, onReset, onBack, isRunning, getShareUrl }: AdminPanelProps) {
   const [minutes, setMinutes] = useState(Math.floor(currentTime / 60).toString());
   const [seconds, setSeconds] = useState((currentTime % 60).toString());
   const [pin, setPin] = useState(currentPin);
   const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState("");
+
+  const handleCopyLink = (autoStart: boolean) => {
+    const url = getShareUrl(autoStart);
+    navigator.clipboard.writeText(url);
+    setCopied(autoStart ? "started" : "config");
+    setTimeout(() => setCopied(""), 2000);
+  };
 
   const handleSave = () => {
     const totalSeconds = parseInt(minutes || "0") * 60 + parseInt(seconds || "0");
