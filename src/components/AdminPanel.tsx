@@ -9,6 +9,7 @@ interface AdminPanelProps {
   onReset: () => void;
   onBack: () => void;
   isRunning: boolean;
+  getShareUrl: (autoStart: boolean) => string;
 }
 
 export function AdminPanel({ currentTime, currentPin, onSave, onStart, onReset, onBack, isRunning }: AdminPanelProps) {
