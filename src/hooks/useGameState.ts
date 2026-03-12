@@ -8,35 +8,49 @@ interface GameState {
   isRunning: boolean;
   isDefused: boolean;
   isExploded: boolean;
+  endTimestamp: number | null; // absolute epoch ms when timer hits zero
 }
 
 const DEFAULT_STATE: GameState = {
-  timeLeftSeconds: 600, // 10 minutes default
+  timeLeftSeconds: 600,
   defusePin: "1234567890",
   isRunning: false,
   isDefused: false,
   isExploded: false,
+  endTimestamp: null,
 };
 
 export function useGameState() {
   const [state, setState] = useState<GameState>(() => {
-    // Check URL params first (shared config link)
     const params = new URLSearchParams(window.location.search);
     const urlTime = params.get("t");
     const urlPin = params.get("p");
-    const urlStart = params.get("s");
-    if (urlTime && urlPin) {
-      const timeLeftSeconds = parseInt(urlTime, 10);
-      const defusePin = urlPin;
-      const isRunning = urlStart === "1";
-      // Clean URL without reloading
+    const urlEnd = params.get("e"); // absolute end timestamp in ms
+    if (urlPin && (urlTime || urlEnd)) {
       window.history.replaceState({}, "", window.location.pathname);
-      return { ...DEFAULT_STATE, timeLeftSeconds, defusePin, isRunning };
+      if (urlEnd) {
+        // Auto-start with absolute end timestamp for cross-device sync
+        const endTs = parseInt(urlEnd, 10);
+        const remaining = Math.max(0, Math.round((endTs - Date.now()) / 1000));
+        if (remaining <= 0) {
+          return { ...DEFAULT_STATE, defusePin: urlPin, isExploded: true };
+        }
+        return {
+          ...DEFAULT_STATE,
+          timeLeftSeconds: remaining,
+          defusePin: urlPin,
+          isRunning: true,
+          endTimestamp: endTs,
+        };
+      }
+      // Config-only link (no auto-start)
+      const timeLeftSeconds = parseInt(urlTime!, 10);
+      return { ...DEFAULT_STATE, timeLeftSeconds, defusePin: urlPin };
     }
     const saved = localStorage.getItem("missile-game-state");
     if (saved) {
       const parsed = JSON.parse(saved);
-      return { ...parsed, isDefused: false, isExploded: false };
+      return { ...parsed, isDefused: false, isExploded: false, endTimestamp: null };
     }
     return DEFAULT_STATE;
   });
@@ -53,7 +67,7 @@ export function useGameState() {
     );
   }, [state.timeLeftSeconds, state.defusePin, state.isRunning]);
 
-  // Countdown timer
+  // Countdown timer — uses endTimestamp for drift-proof sync
   useEffect(() => {
     if (!state.isRunning || state.isDefused || state.isExploded) return;
     if (state.timeLeftSeconds <= 0) {
@@ -62,6 +76,14 @@ export function useGameState() {
     }
     const interval = setInterval(() => {
       setState((s) => {
+        if (s.endTimestamp) {
+          const remaining = Math.max(0, Math.round((s.endTimestamp - Date.now()) / 1000));
+          if (remaining <= 0) {
+            return { ...s, timeLeftSeconds: 0, isExploded: true, isRunning: false };
+          }
+          return { ...s, timeLeftSeconds: remaining };
+        }
+        // Fallback for locally-started timers
         if (s.timeLeftSeconds <= 1) {
           return { ...s, timeLeftSeconds: 0, isExploded: true, isRunning: false };
         }
@@ -95,7 +117,13 @@ export function useGameState() {
   }, []);
 
   const startTimer = useCallback(() => {
-    setState((s) => ({ ...s, isRunning: true, isDefused: false, isExploded: false }));
+    setState((s) => ({
+      ...s,
+      isRunning: true,
+      isDefused: false,
+      isExploded: false,
+      endTimestamp: Date.now() + s.timeLeftSeconds * 1000,
+    }));
   }, []);
 
   const resetGame = useCallback(() => {
@@ -104,18 +132,24 @@ export function useGameState() {
       isRunning: false,
       isDefused: false,
       isExploded: false,
+      endTimestamp: null,
     }));
   }, []);
 
   const getShareUrl = useCallback((autoStart: boolean = false) => {
     const base = window.location.origin + window.location.pathname;
     const params = new URLSearchParams({
-      t: state.timeLeftSeconds.toString(),
       p: state.defusePin,
     });
-    if (autoStart) params.set("s", "1");
+    if (autoStart) {
+      // Encode absolute end timestamp so all devices count to the same moment
+      const endTs = state.endTimestamp || (Date.now() + state.timeLeftSeconds * 1000);
+      params.set("e", endTs.toString());
+    } else {
+      params.set("t", state.timeLeftSeconds.toString());
+    }
     return `${base}?${params.toString()}`;
-  }, [state.timeLeftSeconds, state.defusePin]);
+  }, [state.timeLeftSeconds, state.defusePin, state.endTimestamp]);
 
   return {
     ...state,
