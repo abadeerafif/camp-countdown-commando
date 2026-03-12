@@ -139,12 +139,17 @@ export function useGameState() {
   const getShareUrl = useCallback((autoStart: boolean = false) => {
     const base = window.location.origin + window.location.pathname;
     const params = new URLSearchParams({
-      t: state.timeLeftSeconds.toString(),
       p: state.defusePin,
     });
-    if (autoStart) params.set("s", "1");
+    if (autoStart) {
+      // Encode absolute end timestamp so all devices count to the same moment
+      const endTs = state.endTimestamp || (Date.now() + state.timeLeftSeconds * 1000);
+      params.set("e", endTs.toString());
+    } else {
+      params.set("t", state.timeLeftSeconds.toString());
+    }
     return `${base}?${params.toString()}`;
-  }, [state.timeLeftSeconds, state.defusePin]);
+  }, [state.timeLeftSeconds, state.defusePin, state.endTimestamp]);
 
   return {
     ...state,
