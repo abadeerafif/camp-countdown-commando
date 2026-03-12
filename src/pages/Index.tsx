@@ -67,6 +67,7 @@ const Index = () => {
             onReset={game.resetGame}
             onBack={() => setView("main")}
             isRunning={game.isRunning}
+            getShareUrl={game.getShareUrl}
           />
         ) : game.isDefused ? (
           <DefusedScreen onReset={game.resetGame} />

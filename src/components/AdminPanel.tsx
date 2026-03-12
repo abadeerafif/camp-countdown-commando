@@ -9,13 +9,22 @@ interface AdminPanelProps {
   onReset: () => void;
   onBack: () => void;
   isRunning: boolean;
+  getShareUrl: (autoStart: boolean) => string;
 }
 
-export function AdminPanel({ currentTime, currentPin, onSave, onStart, onReset, onBack, isRunning }: AdminPanelProps) {
+export function AdminPanel({ currentTime, currentPin, onSave, onStart, onReset, onBack, isRunning, getShareUrl }: AdminPanelProps) {
   const [minutes, setMinutes] = useState(Math.floor(currentTime / 60).toString());
   const [seconds, setSeconds] = useState((currentTime % 60).toString());
   const [pin, setPin] = useState(currentPin);
   const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState("");
+
+  const handleCopyLink = (autoStart: boolean) => {
+    const url = getShareUrl(autoStart);
+    navigator.clipboard.writeText(url);
+    setCopied(autoStart ? "started" : "config");
+    setTimeout(() => setCopied(""), 2000);
+  };
 
   const handleSave = () => {
     const totalSeconds = parseInt(minutes || "0") * 60 + parseInt(seconds || "0");
@@ -101,6 +110,22 @@ export function AdminPanel({ currentTime, currentPin, onSave, onStart, onReset, 
             ■ STOP TIMER
           </button>
         )}
+
+        <div className="border-t border-border pt-3 mt-1 space-y-2">
+          <p className="text-[10px] font-display tracking-widest text-muted-foreground text-center uppercase">Share Link</p>
+          <button
+            onClick={() => handleCopyLink(false)}
+            className="w-full h-10 rounded-md border border-border text-muted-foreground font-display tracking-wider text-xs hover:bg-muted active:scale-[0.98] transition-all"
+          >
+            {copied === "config" ? "✓ COPIED!" : "📋 COPY CONFIG LINK"}
+          </button>
+          <button
+            onClick={() => handleCopyLink(true)}
+            className="w-full h-10 rounded-md border border-primary/50 text-primary font-display tracking-wider text-xs hover:bg-primary/10 active:scale-[0.98] transition-all"
+          >
+            {copied === "started" ? "✓ COPIED!" : "🚀 COPY AUTO-START LINK"}
+          </button>
+        </div>
 
         <button
           onClick={onBack}
