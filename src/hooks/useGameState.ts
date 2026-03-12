@@ -22,23 +22,35 @@ const DEFAULT_STATE: GameState = {
 
 export function useGameState() {
   const [state, setState] = useState<GameState>(() => {
-    // Check URL params first (shared config link)
     const params = new URLSearchParams(window.location.search);
     const urlTime = params.get("t");
     const urlPin = params.get("p");
-    const urlStart = params.get("s");
-    if (urlTime && urlPin) {
-      const timeLeftSeconds = parseInt(urlTime, 10);
-      const defusePin = urlPin;
-      const isRunning = urlStart === "1";
-      // Clean URL without reloading
+    const urlEnd = params.get("e"); // absolute end timestamp in ms
+    if (urlPin && (urlTime || urlEnd)) {
       window.history.replaceState({}, "", window.location.pathname);
-      return { ...DEFAULT_STATE, timeLeftSeconds, defusePin, isRunning };
+      if (urlEnd) {
+        // Auto-start with absolute end timestamp for cross-device sync
+        const endTs = parseInt(urlEnd, 10);
+        const remaining = Math.max(0, Math.round((endTs - Date.now()) / 1000));
+        if (remaining <= 0) {
+          return { ...DEFAULT_STATE, defusePin: urlPin, isExploded: true };
+        }
+        return {
+          ...DEFAULT_STATE,
+          timeLeftSeconds: remaining,
+          defusePin: urlPin,
+          isRunning: true,
+          endTimestamp: endTs,
+        };
+      }
+      // Config-only link (no auto-start)
+      const timeLeftSeconds = parseInt(urlTime!, 10);
+      return { ...DEFAULT_STATE, timeLeftSeconds, defusePin: urlPin };
     }
     const saved = localStorage.getItem("missile-game-state");
     if (saved) {
       const parsed = JSON.parse(saved);
-      return { ...parsed, isDefused: false, isExploded: false };
+      return { ...parsed, isDefused: false, isExploded: false, endTimestamp: null };
     }
     return DEFAULT_STATE;
   });
